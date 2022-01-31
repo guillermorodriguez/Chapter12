@@ -1,0 +1,15 @@
+{
+  "name": "trs",
+  "version": "1.0.0",
+  "description": "Table reservation system",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Guillermo Rodriguez",
+  "license": "ISC",
+  "dependencies": {
+    "crypto-js": "^4.1.1",
+    "httpdispatcher": "^2.2.0"
+  }
+}
