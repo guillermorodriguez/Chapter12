@@ -43,9 +43,7 @@ function create_element(object_type, attributes, innerText){
 
 $( document ).ready( function() {
 
-    var url = "http://trs:8888/book-your-table/"
-
-    console.log(window.location.href);
+    var url = "http://trs:8888/book-your-table/";
 
     if (window.location.href == url ){
       create_row('Name', 'text', '');

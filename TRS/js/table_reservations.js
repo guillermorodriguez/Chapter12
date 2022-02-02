@@ -31,7 +31,6 @@ function bootstrap_resources(item, index, array){
 
 
 window.onload = function () {
-// $( document ).ready(function() {
 
   var HOST = 'http://localhost:9595/api/v1.0/software';
   var KEY = '1234567890';
