@@ -2,6 +2,7 @@ var http = require('http');
 var httpDispatch = require('httpdispatcher');
 var crypto = require("crypto-js");
 var file = require('fs');
+var url = require('url');
 
 // Constants
 var HOSTNAME = '127.0.0.1';
@@ -28,7 +29,12 @@ function routerEngine(request, response){
     }
 }
 
-// Software GET
+/*************************************************************************************************************
+
+    SOFTWARE
+
+*************************************************************************************************************/
+// GET
 dispatch.onGet("/api/v1.0/software", function(request, response) {
     response.writeHead(200, {'Content-Type': 'text/plain'});
 
@@ -42,29 +48,55 @@ dispatch.onGet("/api/v1.0/software", function(request, response) {
     });
 });
 
-// Account GET
+/*************************************************************************************************************
 
-// Account POST
+    ACCOUNT
+
+*************************************************************************************************************/
+// GET
+dispatch.onGet("/api/v1.0/account", function(request, response){
+  response.writeHead(200, {'Content-Type': 'application/json'});
+
+  var envelope = url.parse(request.url, true).query;
+  var outcome = false
+
+  console.log("%s:%s access requested", envelope.user, envelope.password);
+
+  try{
+    contents = file.readFileSync('account/account.data', 'utf8');
+    contents.split(/\r?\n/).forEach(line =>  {
+      account = line.split(',')
+
+      if (account.length == 3 && !outcome ) {
+          if( account[0] == envelope.user && account[1] == envelope.password && account[2] == 'valid'){
+            console.log("%s account validated", account[0])
+            outcome = true;
+          }
+      }
+    });
+
+  }catch(err){
+      response.end(JSON.stringify({ result: false, exception: err.message }));
+  }finally{
+    response.end(JSON.stringify({ result: outcome }));
+  }
+
+});
+
+// POST
 dispatch.onPost("/api/v1.0/account", function(request, response){
     response.writeHead(200, {'Content-Type': 'application/json'});
 
     var envelope = JSON.parse(request.body);
     var outcome = false
 
-    console.log("%s:%s access requested", envelope.user, envelope.password);
+    console.log("%s:%s account creation requested", envelope.user, envelope.password);
 
     try{
-      contents = file.readFileSync('account/account.data', 'utf8');
-      contents.split(/\r?\n/).forEach(line =>  {
-        account = line.split(',')
 
-        if (account.length == 3 && !outcome ) {
-            if( account[0] == envelope.user && account[1] == envelope.password && account[2] == 'valid'){
-              console.log("%s account validated", account[0])
-              outcome = true;
-            }
-        }
-      });
+      data = envelope.user + ',' + envelope.password + ",valid\r\n";
+      file.appendFileSync("account/account.data", data);
+      outcome = true
 
     }catch(err){
         response.end(JSON.stringify({ result: false, exception: err.message }));
@@ -73,9 +105,16 @@ dispatch.onPost("/api/v1.0/account", function(request, response){
     }
 });
 
-// Reservation GET
+/*************************************************************************************************************
 
-// Reservation POST
+    RESERVATION
+
+*************************************************************************************************************/
+// DELETE
+
+// GET
+
+// POST
 dispatch.onPost("/api/v1.0/reservation", function(request, response){
   response.writeHead(200, {'Content-Type': 'application/json'});
 
@@ -90,6 +129,8 @@ dispatch.onPost("/api/v1.0/reservation", function(request, response){
     file.appendFileSync("reservation/reservation.data", data);
     outcome = true
 
+    console.log("Reservation stored successfully");
+
   }catch(err){
       response.end(JSON.stringify({ result: false, exception: err.message }));
   }finally{
@@ -98,19 +139,64 @@ dispatch.onPost("/api/v1.0/reservation", function(request, response){
 
 });
 
-// Hour POST
+/*************************************************************************************************************
+
+    HOUR
+
+*************************************************************************************************************/
+// GET
+dispatch.onGet("/api/v1.0/hour", function(request, response){
+  response.writeHead(200, {'Content-Type': 'application/json'});
+
+  var outcome = {};
+
+  console.log("Hours requested");
+
+  try{
+    contents = file.readFileSync('hour/hour.data', 'utf8');
+    contents = contents.split(/\r?\n/);
+
+    if (contents.length > 0) {
+      data = contents[0].split(',')
+      outcome = {
+        "Monday" : data[0].split(':')[1],
+        "Tuesday" : data[1].split(':')[1],
+        "Wednesday" : data[2].split(':')[1],
+        "Thursday" : data[3].split(':')[1],
+        "Friday" : data[4].split(':')[1],
+        "Saturday" : data[5].split(':')[1],
+        "Sunday" : data[6].split(':')[1],
+      }
+    }
+
+  }catch(err){
+      response.end(JSON.stringify({ result: {}, exception: err.message }));
+  }finally{
+    response.end(JSON.stringify({ result: outcome }));
+  }
+});
+
+// POST
 dispatch.onPost("/api/v1.0/hour", function(request, response){
   response.writeHead(200, {'Content-Type': 'application/json'});
 
   var envelope = JSON.parse(request.body);
   var outcome = false
 
-  console.log("Reservation request: %s <%s>", envelope.name, envelope.email);
+  console.log("Restaurant hours updated");
 
   try{
 
-    data = envelope.monday + ',' + envelope.tuesday + "," + envelope.wednesday + ',' + envelope.thursday + ',' + envelope.friday + ',' + envelope.saturday + ',' + envelope.sunday + "\r\n";
-    file.appendFileSync("hour/hour.data", data);
+    data =  "Monday:" + envelope.monday + ',' +
+            "Tuesday:" + envelope.tuesday + "," +
+            "Wednesday:" + envelope.wednesday + ',' +
+            "Thursday:" + envelope.thursday + ',' +
+            "Friday:" + envelope.friday + ',' +
+            "Saturday:" + envelope.saturday + ',' +
+            "Sunday:" + envelope.sunday + "\r\n";
+
+    file.unlinkSync("hour/hour.data")
+    file.writeFileSync("hour/hour.data", data);
     outcome = true
 
   }catch(err){
