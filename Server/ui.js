@@ -12,6 +12,8 @@ function create_row(label, input, caption){
         outer_div = create_element('div', {'class': 'alert alert-danger', 'role': 'alert', 'style': 'width: 100%;'}, caption);
       }else if( label == 'INFO'){
         outer_div = create_element('div', {'class': 'alert alert-primary', 'role': 'alert', 'style': 'width: 100%;'}, caption);
+      }else if (label == 'SUCCESS' ){
+        outer_div = create_element('div', {'class': 'alert alert-success', 'role': 'alert', 'style': 'width: 100%;'}, caption);
       }
     }
     else{
@@ -20,7 +22,7 @@ function create_row(label, input, caption){
 
     $(row).append(outer_div);
 
-    if( label && (label != "ERROR" || label != "INFO") ){
+    if( label != "ERROR" && label != "INFO" && label != "SUCCESS" && label.length > 0){
         var inner_div = create_element('div', {'class': 'input-group-append'}, '');
         $(outer_div).append(inner_div);
         $(inner_div).append( create_element('span', {'class': 'input-group-text', 'style': 'width: 150px;'}, label) );
@@ -42,7 +44,7 @@ function create_row(label, input, caption){
               $(outer_div).append( create_element('button', {'class': 'btn btn-primary', 'type': input, 'onclick': 'portal()'}, caption) );
         }
         else if (caption == 'Reserve'){
-          $(outer_div).append( create_element('button', {'class': 'btn btn-success', 'type': input, 'onclick': 'reserve()'}, caption) );
+          $(outer_div).append( create_element('button', {'class': 'btn btn-success', 'type': input, 'onclick': 'make_reservation()'}, caption) );
         }
     }else if( input == 'link' ){
       // Links
@@ -112,11 +114,22 @@ function portal() {
   create_row('', 'button', 'Login')
 }
 
-function reserve() {
-  clear_content();
-/*
+function make_reservation() {
 
+  var request = new XMLHttpRequest();
+  request.onreadystatechange = function() {
+      if (this.readyState == 4 && this.status == 200) {
+        data = JSON.parse(request.responseText)
+        if( data.result ){
+          clear_content();
+          create_row('SUCCESS', 'label', 'Reservation made successfully.')
+        }else{
+          create_row('ERROR', 'label', 'Please try again later.')
+        }
+      }
+  };
 
+  request.open("POST", HOST + 'reservation', true);
 
   request.send(JSON.stringify({
       name: $('#Name').val(),
@@ -125,7 +138,7 @@ function reserve() {
       telephone: $('#Telephone').val(),
       email: $('#Email').val()
     }));
-    */
+
 }
 
 function set_hours() {
