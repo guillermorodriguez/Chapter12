@@ -28,7 +28,7 @@ function routerEngine(request, response){
     }
 }
 
-// Router Map
+// Software GET
 dispatch.onGet("/api/v1.0/software", function(request, response) {
     response.writeHead(200, {'Content-Type': 'text/plain'});
 
@@ -42,6 +42,9 @@ dispatch.onGet("/api/v1.0/software", function(request, response) {
     });
 });
 
+// Account GET
+
+// Account POST
 dispatch.onPost("/api/v1.0/account", function(request, response){
     response.writeHead(200, {'Content-Type': 'application/json'});
 
@@ -70,6 +73,9 @@ dispatch.onPost("/api/v1.0/account", function(request, response){
     }
 });
 
+// Reservation GET
+
+// Reservation POST
 dispatch.onPost("/api/v1.0/reservation", function(request, response){
   response.writeHead(200, {'Content-Type': 'application/json'});
 
@@ -90,6 +96,28 @@ dispatch.onPost("/api/v1.0/reservation", function(request, response){
     response.end(JSON.stringify({ result: outcome }));
   }
 
+});
+
+// Hour POST
+dispatch.onPost("/api/v1.0/hour", function(request, response){
+  response.writeHead(200, {'Content-Type': 'application/json'});
+
+  var envelope = JSON.parse(request.body);
+  var outcome = false
+
+  console.log("Reservation request: %s <%s>", envelope.name, envelope.email);
+
+  try{
+
+    data = envelope.monday + ',' + envelope.tuesday + "," + envelope.wednesday + ',' + envelope.thursday + ',' + envelope.friday + ',' + envelope.saturday + ',' + envelope.sunday + "\r\n";
+    file.appendFileSync("hour/hour.data", data);
+    outcome = true
+
+  }catch(err){
+      response.end(JSON.stringify({ result: false, exception: err.message }));
+  }finally{
+    response.end(JSON.stringify({ result: outcome }));
+  }
 });
 
 // Router Object Instantiation
