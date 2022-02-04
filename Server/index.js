@@ -1,5 +1,23 @@
-var http = require('http');
-var httpDispatch = require('httpdispatcher');
+//var http = require('http');
+//var httpDispatch = require('httpdispatcher');
+
+const express = require('express')
+const bodyParser = require('body-parser');
+
+const app = express();
+
+
+app.use((req, res, next) => {
+    res.append('Access-Control-Allow-Origin', ['*']);
+    res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    res.append('Access-Control-Allow-Headers', 'Content-Type');
+    next();
+});
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.json());
+app.use(bodyParser.raw());
+
 var crypto = require("crypto-js");
 var file = require('fs');
 var url = require('url');
@@ -9,33 +27,13 @@ var HOSTNAME = '127.0.0.1';
 var PORT = 9595;
 var KEY = '1234567890'
 
-// Variable Instantiation
-dispatch = new httpDispatch();
-
-// Router Function Definition
-function routerEngine(request, response){
-    try{
-        var occurred_on = new Date()
-        console.log("%s - %s", occurred_on.toString(), request.url);
-
-        response.setHeader("Access-Control-Allow-Origin", "*");
-        response.setHeader("Access-Control-Allow-Methods", "POST, GET, OPTIONS, DELETE, PUT");
-        response.setHeader("Access-Control-Allow-Headers", "x-requested-with, content-type, origin, authorization, accept, client-security-token");
-        response.setHeader("Access-Control-Max-Age","1728000");
-
-        dispatch.dispatch(request, response)
-    }catch(err){
-        console.log(err);
-    }
-}
-
 /*************************************************************************************************************
 
     SOFTWARE
 
 *************************************************************************************************************/
 // GET
-dispatch.onGet("/api/v1.0/software", function(request, response) {
+app.get("/api/v1.0/software", (request, response) => {
     response.writeHead(200, {'Content-Type': 'text/plain'});
 
     // Read Code File
@@ -54,10 +52,9 @@ dispatch.onGet("/api/v1.0/software", function(request, response) {
 
 *************************************************************************************************************/
 // GET
-dispatch.onGet("/api/v1.0/account", function(request, response){
-  response.writeHead(200, {'Content-Type': 'application/json'});
+app.get("/api/v1.0/account", (request, response) => {
 
-  var envelope = url.parse(request.url, true).query;
+  var envelope = request.query;
   var outcome = false
 
   console.log("%s:%s access requested", envelope.user, envelope.password);
@@ -76,18 +73,17 @@ dispatch.onGet("/api/v1.0/account", function(request, response){
     });
 
   }catch(err){
-      response.end(JSON.stringify({ result: false, exception: err.message }));
+      response.json({ result: false, exception: err.message });
   }finally{
-    response.end(JSON.stringify({ result: outcome }));
+    response.json({ result: outcome });
   }
 
 });
 
 // POST
-dispatch.onPost("/api/v1.0/account", function(request, response){
-    response.writeHead(200, {'Content-Type': 'application/json'});
+app.post("/api/v1.0/account", (request, response) => {
 
-    var envelope = JSON.parse(request.body);
+    var envelope = request.body;
     var outcome = false
 
     console.log("%s:%s account creation requested", envelope.user, envelope.password);
@@ -99,9 +95,9 @@ dispatch.onPost("/api/v1.0/account", function(request, response){
       outcome = true
 
     }catch(err){
-        response.end(JSON.stringify({ result: false, exception: err.message }));
+        response.json({ result: false, exception: err.message });
     }finally{
-      response.end(JSON.stringify({ result: outcome }));
+      response.json({ result: outcome });
     }
 });
 
@@ -111,14 +107,60 @@ dispatch.onPost("/api/v1.0/account", function(request, response){
 
 *************************************************************************************************************/
 // DELETE
+app.delete("/api/v1.0/reservation/:id", (request, response) => {
+
+  var outcome = false;
+
+  console.log("Reservation delete requested");
+
+  try{
+    console.log("Parsing data");
+
+      outcome = true;
+
+  }catch(err){
+    response.json({ result: false, exception: err.message });
+  }finally{
+    response.json({ result: outcome });
+  }
+
+
+});
 
 // GET
+app.get("/api/v1.0/reservation", (request, response) => {
+
+  var outcome = []
+
+  console.log("Reservations requested");
+
+  try{
+    contents = file.readFileSync('reservation/reservation.data', 'utf8');
+    contents.split(/\r?\n/).forEach(line =>  {
+      reservation = line.split(',')
+
+      if (reservation.length == 5 ) {
+          outcome.push({
+            "date": reservation[0],
+            "time": reservation[1],
+            "name": reservation[2],
+            "telephone": reservation[3],
+            "email": reservation[4]
+          });
+      }
+    });
+
+  }catch(err){
+      response.json({ result: [], exception: err.message });
+  }finally{
+    response.json({ result: outcome });
+  }
+});
 
 // POST
-dispatch.onPost("/api/v1.0/reservation", function(request, response){
-  response.writeHead(200, {'Content-Type': 'application/json'});
+app.post("/api/v1.0/reservation", (request, response) => {
 
-  var envelope = JSON.parse(request.body);
+  var envelope = request.body;
   var outcome = false
 
   console.log("Reservation request: %s <%s>", envelope.name, envelope.email);
@@ -132,9 +174,9 @@ dispatch.onPost("/api/v1.0/reservation", function(request, response){
     console.log("Reservation stored successfully");
 
   }catch(err){
-      response.end(JSON.stringify({ result: false, exception: err.message }));
+      response.json({ result: false, exception: err.message });
   }finally{
-    response.end(JSON.stringify({ result: outcome }));
+    response.json({ result: outcome });
   }
 
 });
@@ -145,9 +187,7 @@ dispatch.onPost("/api/v1.0/reservation", function(request, response){
 
 *************************************************************************************************************/
 // GET
-dispatch.onGet("/api/v1.0/hour", function(request, response){
-  response.writeHead(200, {'Content-Type': 'application/json'});
-
+app.get("/api/v1.0/hour", (request, response) => {
   var outcome = {};
 
   console.log("Hours requested");
@@ -170,19 +210,18 @@ dispatch.onGet("/api/v1.0/hour", function(request, response){
     }
 
   }catch(err){
-      response.end(JSON.stringify({ result: {}, exception: err.message }));
+      response.json({ result: {}, exception: err.message });
   }finally{
-    response.end(JSON.stringify({ result: outcome }));
+    response.json({ result: outcome });
   }
 });
 
 // POST
-dispatch.onPost("/api/v1.0/hour", function(request, response){
-  response.writeHead(200, {'Content-Type': 'application/json'});
+app.post("/api/v1.0/hour", (request, response) => {
 
-  var envelope = JSON.parse(request.body);
+  var envelope = request.body;
   var outcome = false
-
+  
   console.log("Restaurant hours updated");
 
   try{
@@ -200,15 +239,12 @@ dispatch.onPost("/api/v1.0/hour", function(request, response){
     outcome = true
 
   }catch(err){
-      response.end(JSON.stringify({ result: false, exception: err.message }));
+      response.json({ result: false, exception: err.message });
   }finally{
-    response.end(JSON.stringify({ result: outcome }));
+    response.json({ result: outcome });
   }
 });
 
-// Router Object Instantiation
-var server = http.createServer(routerEngine);
-
-server.listen(PORT, HOSTNAME, () => {
-    console.log(`Server instance initialized at ${HOSTNAME}:${PORT}`)
-})
+app.listen(PORT, () => {
+  console.log(`Server instance initialized at ${HOSTNAME}:${PORT}`)
+});
