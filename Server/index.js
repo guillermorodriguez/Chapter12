@@ -7,10 +7,10 @@ const bodyParser = require('body-parser');
 const app = express();
 
 
-app.use((req, res, next) => {
-    res.append('Access-Control-Allow-Origin', ['*']);
-    res.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
-    res.append('Access-Control-Allow-Headers', 'Content-Type');
+app.use((request, response, next) => {
+    response.append('Access-Control-Allow-Origin', ['*']);
+    response.append('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
+    response.append('Access-Control-Allow-Headers', 'Content-Type');
     next();
 });
 
@@ -107,24 +107,36 @@ app.post("/api/v1.0/account", (request, response) => {
 
 *************************************************************************************************************/
 // DELETE
-app.delete("/api/v1.0/reservation/:id", (request, response) => {
+app.delete("/api/v1.0/reservation/:telephone", (request, response) => {
 
   var outcome = false;
 
-  console.log("Reservation delete requested");
+  console.log("Reservation delete requested for telephone: %s", request.params.telephone);
 
   try{
-    console.log("Parsing data");
+    data = "";
 
-      outcome = true;
+    contents = file.readFileSync('reservation/reservation.data', 'utf8');
+    contents.split(/\r?\n/).forEach(line =>  {
+      reservation = line.split(',')
+
+      if (reservation.length == 5 ) {
+          if ( request.params.telephone != reservation[3] ){
+            data += line + '\r\n';
+          }
+      }
+    });
+
+    file.unlinkSync("reservation/reservation.data")
+    file.writeFileSync("reservation/reservation.data", data);
+
+    outcome = true;
 
   }catch(err){
     response.json({ result: false, exception: err.message });
   }finally{
     response.json({ result: outcome });
   }
-
-
 });
 
 // GET
@@ -167,11 +179,53 @@ app.post("/api/v1.0/reservation", (request, response) => {
 
   try{
 
-    data = envelope.date + ',' + envelope.time + "," + envelope.name + ',' + envelope.telephone + ',' + envelope.email + "\r\n";
-    file.appendFileSync("reservation/reservation.data", data);
-    outcome = true
+    // Availability
+    var availability = file.readFileSync('hour/hour.data', 'utf8');
+    availability = availability.split(/\r?\n/)[0].split(',');
 
-    console.log("Reservation stored successfully");
+    // Proposed Date and Time
+    var calendar = envelope.date.split('-')
+    var time_given = 0;
+
+    if ( (envelope.time).includes('PM') ){
+      time_given = 12 + parseInt((envelope.time).replace(' PM', ''));
+    }else{
+      time_given = parseInt((envelope.time).replace(' PM', ''));
+    }
+
+    var reservation_date = new Date (parseInt(calendar[0]), parseInt(calendar[1]) -1, parseInt(calendar[2]), time_given);
+    var day_of_week = reservation_date.getDay();
+
+    // Restaurant availability
+    var open_between = availability[day_of_week].split(':')[1];
+
+    // Start
+    var start_hour = open_between.split('-')[0].trim().split(' ');
+    if( start_hour[1] == 'PM'){
+      time_given = 12 + parseInt(start_hour[0]);
+    }else{
+      time_given = parseInt(start_hour[0]);
+    }
+    var temp_start = new Date(parseInt(calendar[0]), parseInt(calendar[1]) -1, parseInt(calendar[2]), time_given);
+
+    // End
+    var end_hour = open_between.split('-')[1].trim().split(' ');
+    if( end_hour[1] == 'PM'){
+      time_given = 12 + parseInt(end_hour[0]);
+    }else{
+      time_given = parseInt(end_hour[0]);
+    }
+    var temp_end = new Date(parseInt(calendar[0]), parseInt(calendar[1]) -1, parseInt(calendar[2]), time_given);
+
+    if( reservation_date >= temp_start && reservation_date <= temp_end ){
+          data = envelope.date + ',' + envelope.time + "," + envelope.name + ',' + envelope.telephone + ',' + envelope.email + "\r\n";
+          file.appendFileSync("reservation/reservation.data", data);
+          outcome = true
+
+          console.log("Reservation stored successfully");
+    }else{
+      console.log('Restaurant is closed during requested reservation time!')
+    }
 
   }catch(err){
       response.json({ result: false, exception: err.message });
@@ -199,13 +253,13 @@ app.get("/api/v1.0/hour", (request, response) => {
     if (contents.length > 0) {
       data = contents[0].split(',')
       outcome = {
-        "Monday" : data[0].split(':')[1],
-        "Tuesday" : data[1].split(':')[1],
-        "Wednesday" : data[2].split(':')[1],
-        "Thursday" : data[3].split(':')[1],
-        "Friday" : data[4].split(':')[1],
-        "Saturday" : data[5].split(':')[1],
-        "Sunday" : data[6].split(':')[1],
+        "Sunday" : data[0].split(':')[1],
+        "Monday" : data[1].split(':')[1],
+        "Tuesday" : data[2].split(':')[1],
+        "Wednesday" : data[3].split(':')[1],
+        "Thursday" : data[4].split(':')[1],
+        "Friday" : data[5].split(':')[1],
+        "Saturday" : data[6].split(':')[1],
       }
     }
 
@@ -221,18 +275,18 @@ app.post("/api/v1.0/hour", (request, response) => {
 
   var envelope = request.body;
   var outcome = false
-  
+
   console.log("Restaurant hours updated");
 
   try{
 
-    data =  "Monday:" + envelope.monday + ',' +
+    data =  "Sunday:" + envelope.sunday + ',' +
+            "Monday:" + envelope.monday + ',' +
             "Tuesday:" + envelope.tuesday + "," +
             "Wednesday:" + envelope.wednesday + ',' +
             "Thursday:" + envelope.thursday + ',' +
             "Friday:" + envelope.friday + ',' +
-            "Saturday:" + envelope.saturday + ',' +
-            "Sunday:" + envelope.sunday + "\r\n";
+            "Saturday:" + envelope.saturday + ',' + "\r\n";
 
     file.unlinkSync("hour/hour.data")
     file.writeFileSync("hour/hour.data", data);

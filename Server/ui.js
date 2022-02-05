@@ -121,6 +121,13 @@ function portal_admin_make_header(){
 }
 
 function reservation_delete_action(data) {
+  /*
+      name: entries[0],
+      date: entries[1],
+      time: entries[2],
+      telephone: entries[3],
+      email: entries[4]
+  */
   entries = data.split(',')
 
   var request = new XMLHttpRequest();
@@ -137,17 +144,7 @@ function reservation_delete_action(data) {
 
   request.open("DELETE", encodeURI(HOST + 'reservation/' + entries[3]), true);
   request.setRequestHeader("Accept", "*/*");
-  //request.setRequestHeader("Authorization", "Bearer mt0dgHmLJMVQhvjpNXDyA83vA_PxH23Y");
   request.send();
-/*
-  request.send(JSON.stringify({
-      name: entries[0],
-      date: entries[1],
-      time: entries[2],
-      telephone: entries[3],
-      email: entries[4]
-    }));
-*/
 }
 
 function reservations_make_admin_ui(){
@@ -285,5 +282,7 @@ $( document ).ready( function() {
     create_row('', 'button', 'Portal');
 
     reservations_make_ui();
+
+    create_row('', 'link', 'www.TableReservationSystem.MDA.com');
   }
 });
