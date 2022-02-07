@@ -121,13 +121,7 @@ function portal_admin_make_header(){
 }
 
 function reservation_delete_action(data) {
-  /*
-      name: entries[0],
-      date: entries[1],
-      time: entries[2],
-      telephone: entries[3],
-      email: entries[4]
-  */
+
   entries = data.split(',')
 
   var request = new XMLHttpRequest();

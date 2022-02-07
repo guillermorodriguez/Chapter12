@@ -1,5 +1,3 @@
-//var http = require('http');
-//var httpDispatch = require('httpdispatcher');
 
 const express = require('express')
 const bodyParser = require('body-parser');
