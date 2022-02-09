@@ -263,6 +263,27 @@ function hours_make_action() {
 
 }
 
+function get_title() { return "Lubbock Deli Meats"; }
+
+function get_description() { return "Pizza, Pasta, Deli, Restaurant"; }
+
+function get_header_two(){ return "Faster service than West Lubbock Deli!"; }
+
+function get_keywords() { return "Pizza, Pasta, Deli, Restaurant"; }
+
+function create_seo(){
+
+  // Title SEO friendly content
+  $(document).prop('title', get_title() );
+
+  // Page SEO friendly content
+  $('#trs_container').append('<h2>' + get_header_two() + '</h2>')
+
+  // Meta tags
+  $('head')[0].append('<meta name="description" content="' + get_description() + '>');
+  $('head')[0].append('<meta name="keywords" content="' + get_keywords() + '>');
+}
+
 
 $( document ).ready( function() {
 
@@ -275,6 +296,10 @@ $( document ).ready( function() {
     // Login section
     create_row('', 'button', 'Portal');
 
+    // Add SEO
+    create_seo();
+
+    // Build reservation form
     reservations_make_ui();
 
     create_row('', 'link', 'www.TableReservationSystem.MDA.com');
